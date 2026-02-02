@@ -9,6 +9,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/machinerd/go-module/idgen"
 )
 
 func (s *S3Service) TransferObjectIfNotExist(filename string) error {
@@ -56,6 +57,27 @@ func (s *S3Service) ParseImgSrc(content *string, prefix string) (*string, error)
 		newContent = strings.ReplaceAll(newContent, match[1], newSrc)
 	}
 	return &newContent, nil
+}
+
+func (s *S3Service) CopyObject(filename string) error {
+	fileInfoArr := strings.Split(filename, ".")
+
+	var newFileExt string
+	newFileName := idgen.MakeUUID()
+	if len(fileInfoArr) > 1 {
+		newFileExt = fileInfoArr[1]
+		newFileName = fmt.Sprintf("%s/%s.%s", s.config.FilePrefix, newFileName, newFileExt)
+	}
+
+	sourceKey := fmt.Sprintf("%s/%s/%s", s.config.Bucket, s.config.SourcePrefix, filename)
+	destKey := fmt.Sprintf("%s/%s", s.config.DestPrefix, newFileName)
+
+	if err := s.TransferObject(sourceKey, destKey); err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	return nil
 }
 
 func (s *S3Service) TransferObject(sourceKey string, destKey string) error {

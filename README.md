@@ -9,6 +9,7 @@
     - **`/clause`**: SQL Join, OrderBy 등 동적 쿼리 구문 생성을 담당합니다.
     - **`/cmd`**: Create, Update, Delete 쿼리 구문을 담당합니다.
     - **`/schema`**: 모델 구조체(Struct)의 태그를 분석하여 Select 필드를 자동 추출합니다.
+- **`/idgen`** : 식별자 생성 로직과 관련된 유틸리티 파일들이 위치합니다.
 
 ## 🚀 시작하기
 
