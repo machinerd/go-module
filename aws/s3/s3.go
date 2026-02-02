@@ -8,6 +8,7 @@ type Config struct {
 	Bucket       string
 	SourcePrefix string 
 	DestPrefix   string 
+	FilePrefix   string
 	CdnUri       string
 	Key          string
 }

@@ -5,6 +5,7 @@ go 1.24.4
 require (
 	github.com/aws/aws-sdk-go v1.55.8
 	github.com/doug-martin/goqu/v9 v9.19.0
+	github.com/google/uuid v1.6.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/knadh/koanf/parsers/yaml v1.1.0
 	github.com/knadh/koanf/providers/env v1.1.0
