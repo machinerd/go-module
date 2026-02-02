@@ -59,7 +59,7 @@ func (s *S3Service) ParseImgSrc(content *string, prefix string) (*string, error)
 	return &newContent, nil
 }
 
-func (s *S3Service) CopyObject(filename string) error {
+func (s *S3Service) CopyObject(filename string) (string, error) {
 	fileInfoArr := strings.Split(filename, ".")
 
 	var newFileExt string
@@ -74,10 +74,10 @@ func (s *S3Service) CopyObject(filename string) error {
 
 	if err := s.TransferObject(sourceKey, destKey); err != nil {
 		fmt.Println(err)
-		return err
+		return "", err
 	}
 
-	return nil
+	return newFileName, nil
 }
 
 func (s *S3Service) TransferObject(sourceKey string, destKey string) error {
