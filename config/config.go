@@ -20,8 +20,14 @@ func New(configPath string) (*Config, error) {
 		return nil, err
 	}
 
-	if err := k.Load(env.Provider("ENV_", ".", func(s string) string {
+	if err := k.Load(env.Provider("ENV", ".", func(s string) string {
 		return strings.ToLower(strings.TrimPrefix(s, "ENV_"))
+	}), nil); err != nil {
+		return nil, err
+	}
+
+	if err := k.Load(env.Provider("AWS", ".", func(s string) string {
+		return strings.ToLower(s)
 	}), nil); err != nil {
 		return nil, err
 	}

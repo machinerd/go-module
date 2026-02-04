@@ -14,7 +14,7 @@
 ## 🚀 시작하기
 
 ### 1. 설치
-```bash
+```go
 go get github.com/machinerd/go-module@vX.Y.Z
 ```
 
@@ -22,8 +22,37 @@ go get github.com/machinerd/go-module@vX.Y.Z
 Requires Go >= 1.24 (toolchain supported)
 
 ### 2. import 적용
-```bash
+
+#### configuration 예시
+
+* 초기 세팅
+
+```go
+// config.go
 import (
   clause "github.com/machinerd/go-module/db/clause"
 )
+
+var cfg *module_config.Config
+
+func ConfigLoad() {
+  var err error
+  cfg, err = module_config.New("./config/config.yml")
+  if err != nil {
+    panic(err)
+  }
+
+}
+
+func GetConfig() *module_config.Config {
+  return cfg
+}
+```
+
+* config 설정 가져오기
+
+```go
+  k := config.GetConfig()
+
+  bucket := k.String("s3_bucket")
 ```
