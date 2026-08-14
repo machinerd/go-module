@@ -112,6 +112,25 @@ func TestNewSlogLoggerAppliesLogLevelEnvVar(t *testing.T) {
 	}
 }
 
+func TestSlogLoggerLevelReflectsSetLevel(t *testing.T) {
+	var buf bytes.Buffer
+	l := newTestSlogLogger(&buf)
+
+	if got := l.Level(); got != LevelInfo {
+		t.Errorf("default Level() = %v, want %v", got, LevelInfo)
+	}
+
+	l.SetLevel(LevelWarn)
+	if got := l.Level(); got != LevelWarn {
+		t.Errorf("Level() after SetLevel(LevelWarn) = %v, want %v", got, LevelWarn)
+	}
+
+	child := l.With("k", "v").(*slogLogger)
+	if got := child.Level(); got != LevelWarn {
+		t.Errorf("child Level() = %v, want %v (shared levelVar)", got, LevelWarn)
+	}
+}
+
 func TestSlogLoggerDefaultLevelSuppressesDebug(t *testing.T) {
 	var buf bytes.Buffer
 	l := newTestSlogLogger(&buf)

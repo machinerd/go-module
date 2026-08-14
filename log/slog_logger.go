@@ -49,3 +49,10 @@ func (s *slogLogger) With(args ...any) Logger {
 func (s *slogLogger) SetLevel(level Level) {
 	s.levelVar.Set(level.slogLevel())
 }
+
+// Level returns the logger's current minimum severity. Satisfies the
+// unexported levelGetter interface used by the package-level CurrentLevel
+// function.
+func (s *slogLogger) Level() Level {
+	return levelFromSlog(s.levelVar.Level())
+}

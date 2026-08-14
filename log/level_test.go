@@ -2,6 +2,14 @@ package log
 
 import "testing"
 
+func TestLevelFromSlogRoundTrip(t *testing.T) {
+	for _, l := range []Level{LevelDebug, LevelInfo, LevelWarn, LevelError} {
+		if got := levelFromSlog(l.slogLevel()); got != l {
+			t.Errorf("levelFromSlog(%v.slogLevel()) = %v, want %v", l, got, l)
+		}
+	}
+}
+
 func TestParseLevel(t *testing.T) {
 	cases := []struct {
 		input  string

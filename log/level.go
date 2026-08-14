@@ -28,6 +28,19 @@ func (l Level) slogLevel() slog.Level {
 	}
 }
 
+func levelFromSlog(sl slog.Level) Level {
+	switch sl {
+	case slog.LevelDebug:
+		return LevelDebug
+	case slog.LevelWarn:
+		return LevelWarn
+	case slog.LevelError:
+		return LevelError
+	default:
+		return LevelInfo
+	}
+}
+
 func (l Level) String() string {
 	switch l {
 	case LevelDebug:

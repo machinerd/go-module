@@ -2,6 +2,7 @@ package log
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
@@ -67,6 +68,61 @@ func TestLevelHandlerAllValidLevels(t *testing.T) {
 				t.Errorf("level = %v, want %v", levelVar.Level(), tc.want.slogLevel())
 			}
 		})
+	}
+}
+
+func TestLevelHandlerGetReturnsCurrentLevel(t *testing.T) {
+	original := std
+	t.Cleanup(func() { std = original })
+
+	levelVar := &slog.LevelVar{}
+	SetLogger(&slogLogger{
+		l:        slog.New(slog.NewJSONHandler(io.Discard, &slog.HandlerOptions{Level: levelVar})),
+		levelVar: levelVar,
+	})
+	SetLevel(LevelWarn)
+
+	req := httptest.NewRequest(http.MethodGet, "/admin/log-level", nil)
+	w := httptest.NewRecorder()
+	LevelHandler()(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusOK)
+	}
+
+	var body struct {
+		Level string `json:"level"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&body); err != nil {
+		t.Fatalf("response is not valid JSON: %v", err)
+	}
+	if body.Level != "warn" {
+		t.Errorf("level = %q, want %q", body.Level, "warn")
+	}
+}
+
+func TestLevelHandlerGetNotImplementedWhenUnsupported(t *testing.T) {
+	original := std
+	t.Cleanup(func() { std = original })
+
+	SetLogger(&mockLogger{}) // doesn't implement levelGetter
+
+	req := httptest.NewRequest(http.MethodGet, "/admin/log-level", nil)
+	w := httptest.NewRecorder()
+	LevelHandler()(w, req)
+
+	if w.Code != http.StatusNotImplemented {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusNotImplemented)
+	}
+}
+
+func TestLevelHandlerRejectsOtherMethods(t *testing.T) {
+	req := httptest.NewRequest(http.MethodDelete, "/admin/log-level", nil)
+	w := httptest.NewRecorder()
+	LevelHandler()(w, req)
+
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("status = %d, want %d", w.Code, http.StatusMethodNotAllowed)
 	}
 }
 

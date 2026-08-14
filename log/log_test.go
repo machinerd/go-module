@@ -53,6 +53,40 @@ func TestSetLevelNoOpsForLoggerWithoutLevelSupport(t *testing.T) {
 	SetLevel(LevelDebug)
 }
 
+func TestCurrentLevelNotOkForLoggerWithoutLevelSupport(t *testing.T) {
+	withMockLogger(t)
+
+	// mockLogger doesn't implement levelGetter.
+	if _, ok := CurrentLevel(); ok {
+		t.Fatalf("CurrentLevel() ok = true, want false for a logger without level support")
+	}
+}
+
+type levelAwareMockLogger struct {
+	mockLogger
+	level Level
+}
+
+func (m *levelAwareMockLogger) SetLevel(level Level) { m.level = level }
+func (m *levelAwareMockLogger) Level() Level         { return m.level }
+
+func TestCurrentLevelReflectsSetLevel(t *testing.T) {
+	original := std
+	t.Cleanup(func() { std = original })
+
+	m := &levelAwareMockLogger{level: LevelInfo}
+	SetLogger(m)
+
+	if level, ok := CurrentLevel(); !ok || level != LevelInfo {
+		t.Fatalf("CurrentLevel() = (%v, %v), want (%v, true)", level, ok, LevelInfo)
+	}
+
+	SetLevel(LevelDebug)
+	if level, ok := CurrentLevel(); !ok || level != LevelDebug {
+		t.Fatalf("CurrentLevel() after SetLevel(LevelDebug) = (%v, %v), want (%v, true)", level, ok, LevelDebug)
+	}
+}
+
 func TestWithDelegatesAndReturnsChildLogger(t *testing.T) {
 	m := withMockLogger(t)
 

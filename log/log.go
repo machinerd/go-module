@@ -43,3 +43,20 @@ func SetLevel(level Level) {
 		ls.SetLevel(level)
 	}
 }
+
+// levelGetter is the read-side counterpart to levelSetter, kept separate
+// for the same reason: Logger implementations that don't support level
+// control aren't forced to implement it.
+type levelGetter interface {
+	Level() Level
+}
+
+// CurrentLevel reports the active logger's current level. ok is false if
+// the active Logger doesn't support level reporting (the default logger
+// does).
+func CurrentLevel() (level Level, ok bool) {
+	if lg, ok := std.(levelGetter); ok {
+		return lg.Level(), true
+	}
+	return 0, false
+}
