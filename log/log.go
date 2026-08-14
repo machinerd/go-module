@@ -27,3 +27,19 @@ func Warn(msg string, args ...any)  { std.Warn(msg, args...) }
 func Error(msg string, args ...any) { std.Error(msg, args...) }
 func Fatal(msg string, args ...any) { std.Fatal(msg, args...) }
 func With(args ...any) Logger       { return std.With(args...) }
+
+// levelSetter is an optional capability a Logger implementation can add to
+// support SetLevel. It's not part of Logger itself so implementations that
+// don't need level control aren't forced to implement it.
+type levelSetter interface {
+	SetLevel(level Level)
+}
+
+// SetLevel adjusts the minimum severity the current logger emits. It's a
+// no-op if the active Logger doesn't support level control (the default
+// logger does).
+func SetLevel(level Level) {
+	if ls, ok := std.(levelSetter); ok {
+		ls.SetLevel(level)
+	}
+}

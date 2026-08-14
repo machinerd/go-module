@@ -46,6 +46,13 @@ func TestPackageFunctionsDelegateToSetLogger(t *testing.T) {
 	}
 }
 
+func TestSetLevelNoOpsForLoggerWithoutLevelSupport(t *testing.T) {
+	withMockLogger(t)
+
+	// mockLogger doesn't implement levelSetter; this must not panic.
+	SetLevel(LevelDebug)
+}
+
 func TestWithDelegatesAndReturnsChildLogger(t *testing.T) {
 	m := withMockLogger(t)
 
