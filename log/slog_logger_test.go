@@ -77,6 +77,41 @@ func TestSlogLoggerWithAddsFieldsWithoutMutatingParent(t *testing.T) {
 	}
 }
 
+func TestInitialLevelFromEnv(t *testing.T) {
+	cases := []struct {
+		name   string
+		setEnv bool
+		envVal string
+		want   Level
+	}{
+		{"unset defaults to info", false, "", LevelInfo},
+		{"empty defaults to info", true, "", LevelInfo},
+		{"debug", true, "debug", LevelDebug},
+		{"case-insensitive", true, "WARN", LevelWarn},
+		{"invalid falls back to info", true, "verbose", LevelInfo},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.setEnv {
+				t.Setenv("LOG_LEVEL", tc.envVal)
+			}
+			if got := initialLevelFromEnv(); got != tc.want {
+				t.Errorf("initialLevelFromEnv() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestNewSlogLoggerAppliesLogLevelEnvVar(t *testing.T) {
+	t.Setenv("LOG_LEVEL", "warn")
+
+	l := newSlogLogger()
+	if l.levelVar.Level() != LevelWarn.slogLevel() {
+		t.Errorf("levelVar = %v, want %v", l.levelVar.Level(), LevelWarn.slogLevel())
+	}
+}
+
 func TestSlogLoggerDefaultLevelSuppressesDebug(t *testing.T) {
 	var buf bytes.Buffer
 	l := newTestSlogLogger(&buf)

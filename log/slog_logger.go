@@ -11,11 +11,22 @@ type slogLogger struct {
 }
 
 func newSlogLogger() *slogLogger {
-	levelVar := &slog.LevelVar{} // zero value is slog.LevelInfo
+	levelVar := &slog.LevelVar{}
+	levelVar.Set(initialLevelFromEnv().slogLevel())
 	return &slogLogger{
 		l:        slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: levelVar})),
 		levelVar: levelVar,
 	}
+}
+
+// initialLevelFromEnv reads the LOG_LEVEL environment variable to seed the
+// starting log level. It falls back to LevelInfo if the variable is unset
+// or holds an unrecognized value.
+func initialLevelFromEnv() Level {
+	if level, ok := ParseLevel(os.Getenv("LOG_LEVEL")); ok {
+		return level
+	}
+	return LevelInfo
 }
 
 func (s *slogLogger) Debug(msg string, args ...any) { s.l.Debug(msg, args...) }
