@@ -3,14 +3,17 @@ module github.com/machinerd/go-module
 go 1.24.4
 
 require (
+	github.com/99designs/gqlgen v0.17.54
 	github.com/aws/aws-sdk-go v1.55.8
 	github.com/doug-martin/goqu/v9 v9.19.0
 	github.com/google/uuid v1.6.0
+	github.com/graph-gophers/dataloader/v7 v7.1.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/knadh/koanf/parsers/yaml v1.1.0
 	github.com/knadh/koanf/providers/env v1.1.0
 	github.com/knadh/koanf/providers/file v1.2.1
 	github.com/knadh/koanf/v2 v2.3.2
+	github.com/vektah/gqlparser/v2 v2.5.17
 )
 
 require (
@@ -20,6 +23,7 @@ require (
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/sosodev/duration v1.3.1 // indirect
 	go.yaml.in/yaml/v3 v3.0.3 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 )
