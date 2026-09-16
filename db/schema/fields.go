@@ -81,3 +81,34 @@ func GetFieldsExceptFor(data interface{}, except []string) []interface{} {
 	}
 	return selects
 }
+
+func CheckUpdateFieldsExist(input any, allowedFields []string) (bool, []string) {
+	allowed := make(map[string]bool)
+	for _, f := range allowedFields {
+		allowed[f] = true
+	}
+
+	v := reflect.ValueOf(input)
+	if v.Kind() == reflect.Pointer {
+		v = v.Elem()
+	}
+
+	t := v.Type()
+	var invalid []string
+	for i := 0; i < v.NumField(); i++ {
+		field := t.Field(i).Name
+		value := v.Field(i)
+
+		// 허용되지 않은 필드이면서 값이 기본값이 아니면 invalid
+		if !allowed[field] && !IsZeroValue(value) {
+			invalid = append(invalid, field)
+		}
+	}
+
+	return len(invalid) > 0, invalid
+}
+
+// 기본값 체크
+func IsZeroValue(v reflect.Value) bool {
+	return reflect.DeepEqual(v.Interface(), reflect.Zero(v.Type()).Interface())
+}
