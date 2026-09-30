@@ -127,13 +127,14 @@ func isNilValue(value reflect.Value) bool {
 }
 
 // 1. Patch 생성 및 저장 (스냅샷 주기 체크 포함)
-func SavePatch(dbx *sqlx.DB, entityType string, recordID int, oldObj, newObj map[string]any, userID int) (int, error) {
-	// 2. 카운터 행 배타 락(FOR UPDATE) 조회
-	ctx := context.Background()
-	tx := dbx.MustBegin()
-
-	// 저상 커밋시 적용되지 않음.
-	defer tx.Rollback()
+func SavePatch(
+	ctx context.Context,
+	tx *sqlx.Tx,
+	entityType string,
+	recordID int,
+	oldObj, newObj map[string]any,
+	userID int,
+) (int, error) {
 
 	recordViewCounter, err := GetRecordVersionCounter(tx, entityType, recordID)
 
@@ -239,11 +240,6 @@ func SavePatch(dbx *sqlx.DB, entityType string, recordID int, oldObj, newObj map
 	_, err = InsertRecordPatch(ctx, tx, entityType, recordID, newVersion, patchJSON, userID)
 	if err != nil {
 		return 0, fmt.Errorf("failed to insert patch record: %w", err)
-	}
-
-	// 8. 트랜잭션 커밋
-	if err := tx.Commit(); err != nil {
-		return 0, fmt.Errorf("failed to commit record: %w", err)
 	}
 
 	return newVersion, nil
