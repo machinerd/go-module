@@ -6,6 +6,7 @@ require (
 	github.com/99designs/gqlgen v0.17.54
 	github.com/aws/aws-sdk-go v1.55.8
 	github.com/doug-martin/goqu/v9 v9.19.0
+	github.com/evanphx/json-patch/v5 v5.9.11
 	github.com/google/uuid v1.6.0
 	github.com/graph-gophers/dataloader/v7 v7.1.0
 	github.com/jmoiron/sqlx v1.4.0
