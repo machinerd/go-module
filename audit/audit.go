@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/doug-martin/goqu/v9"
+	jsonpatch "github.com/evanphx/json-patch/v5"
 	"github.com/jmoiron/sqlx"
 	"github.com/machinerd/go-module/audit/assemble"
 	"github.com/wI2L/jsondiff"
@@ -231,11 +232,66 @@ func LockRecord(ctx context.Context, tx *sqlx.Tx, entityType string, recordID in
 
 // diffSnapshots 는 수정 전/후 상태의 JSON Patch(RFC 6902)를 만든다.
 // relation 은 KeyRelations 로 PK 키 객체가 되어 있으므로 행 변경은 /series/{id}/... 경로의
-// add/remove/replace 로 기록된다. 아래 옵션은 배열로 남는 배열 컬럼(text[] 등)에 적용된다.
-//   - LCS: 배열을 인덱스별이 아니라 최장 공통 부분수열로 비교한다 (가운데 값 삭제 → remove 하나).
-//   - Factorize: 같은 값의 remove+add 를 move 로, 바뀌지 않은 값과 같은 add 를 copy 로 합친다.
+// add/remove/replace 로 기록된다. LCS 는 배열로 남는 배열 컬럼(text[] 등)을 인덱스별이 아니라
+// 최장 공통 부분수열로 비교한다 (가운데 값 삭제 → remove 하나).
+//
+// Factorize(move/copy 합치기)는 쓰지 않는다. jsondiff v0.7.1 에서 LCS 와 함께 쓰면, 배열의 삭제와 순서 변경이
+// 함께 일어날 때 move 를 patch 앞쪽에 끼워 넣어서 적용 결과가 수정 후 상태와 다른 patch 를 만든다.
+// (예: [A B C D] → [A D C] 에서 move /1→/2, remove /1 을 만들고, 이를 적용하면 [A B D] 가 된다)
 func diffSnapshots(oldObj, newObj map[string]any) (jsondiff.Patch, error) {
-	return jsondiff.Compare(oldObj, newObj, jsondiff.Factorize(), jsondiff.LCS())
+	return jsondiff.Compare(oldObj, newObj, jsondiff.LCS())
+}
+
+// buildPatch 는 patch 를 만들고, oldObj 에 적용한 결과가 newObj 와 같은지 확인한다.
+// 라이브러리 버그 등으로 틀린 patch 가 만들어지면 옵션 없는(인덱스 기준) diff 로 다시 만들고,
+// 그것도 맞지 않으면 에러를 반환한다. 틀린 이력이 조용히 저장되는 것보다 저장 실패가 낫기 때문이다.
+func buildPatch(oldObj, newObj map[string]any) (jsondiff.Patch, error) {
+	patch, err := diffSnapshots(oldObj, newObj)
+	if err != nil {
+		return nil, err
+	}
+	if verifyPatch(oldObj, newObj, patch) == nil {
+		return patch, nil
+	}
+
+	fallback, err := jsondiff.Compare(oldObj, newObj)
+	if err != nil {
+		return nil, err
+	}
+	if err := verifyPatch(oldObj, newObj, fallback); err != nil {
+		return nil, fmt.Errorf("verify patch: %w", err)
+	}
+	return fallback, nil
+}
+
+// verifyPatch 는 patch 를 oldObj 에 적용한 결과가 newObj 와 같은지 확인한다.
+func verifyPatch(oldObj, newObj map[string]any, patch jsondiff.Patch) error {
+	oldJSON, err := json.Marshal(oldObj)
+	if err != nil {
+		return err
+	}
+	newJSON, err := json.Marshal(newObj)
+	if err != nil {
+		return err
+	}
+	applied := oldJSON
+	if len(patch) > 0 {
+		patchJSON, err := json.Marshal(patch)
+		if err != nil {
+			return err
+		}
+		decoded, err := jsonpatch.DecodePatch(patchJSON)
+		if err != nil {
+			return fmt.Errorf("decode patch: %w", err)
+		}
+		if applied, err = decoded.Apply(oldJSON); err != nil {
+			return fmt.Errorf("apply patch: %w", err)
+		}
+	}
+	if !jsonpatch.Equal(applied, newJSON) {
+		return fmt.Errorf("patch 적용 결과가 수정 후 상태와 다릅니다")
+	}
+	return nil
 }
 
 // shouldSaveSnapshot 은 newVersion 에서 스냅샷을 저장할지 정한다.
@@ -260,7 +316,7 @@ func (b *BaseManager) SavePatch(ctx context.Context, tx *sqlx.Tx) (int, error) {
 		return 0, err
 	}
 
-	patch, err := diffSnapshots(b.oldObj, b.newObj)
+	patch, err := buildPatch(b.oldObj, b.newObj)
 
 	if err != nil {
 		return 0, fmt.Errorf("generate patch: %w", err)
